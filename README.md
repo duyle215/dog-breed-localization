@@ -8,18 +8,23 @@ The project started as a university deep-learning assignment (`notebooks/ver2.ip
 
 Test split: 357 images (about 10% per breed). Localization accuracy follows the ImageNet protocol: a prediction is correct only if the **breed is right and** the box has IoU ≥ threshold with an annotated dog.
 
-| Model | Top-1 acc | Mean box IoU | Loc. acc @0.5 |
-| --- | --- | --- | --- |
-| Baseline: ImageNet EfficientNet-B0, no training, restricted to the 20 breeds | 97.2% | – | – |
-| Baseline: always predict the mean training box | – | 0.536 | 64.7%¹ |
-| Original notebook (random split, union box target) | 96.6% | 0.870 | 95.7%² |
-| This pipeline (3 seeds) | *training in progress* | | |
+| Model | Top-1 acc | Mean box IoU | Loc. acc @0.5 | Loc. acc @0.75 | Loc. acc @[.50:.95] |
+| --- | --- | --- | --- | --- | --- |
+| Baseline: ImageNet EfficientNet-B0, no training, restricted to the 20 breeds | 97.2% | – | – | – | – |
+| Baseline: always predict the mean training box | – | 0.536 | 64.7%¹ | – | – |
+| **This pipeline** (mean ± std over 3 seeds) | **97.1 ± 0.2%** | **0.850 ± 0.003** | **92.9 ± 0.4%** | **83.0 ± 0.7%** | **74.6 ± 0.5%** |
+| Original notebook² (random split, union box target) | 96.6% | 0.870 | 95.7%³ | – | – |
 
-¹ Combined with the zero-shot classifier. ² Macro average over breeds.
+¹ Combined with the zero-shot classifier. ² Not directly comparable: its random split lets near-duplicates fall into both train and test, and its union-box target is easier to hit on multi-dog images. ³ Macro average over breeds.
 
 **How to read this:**
-- **Classification:** Stanford Dogs is a subset of ImageNet, and the backbone was pretrained on ImageNet, so it already recognises these breeds (97.2% without any training). Breed accuracy therefore says little about what this project adds.
-- **Localization:** this is where the trained model contributes, raising box IoU from 0.54 for a fixed box to about 0.87.
+- **Classification:** Stanford Dogs is a subset of ImageNet, and the backbone was pretrained on ImageNet, so it already recognises these breeds (97.2% without any training). Fine-tuning keeps that level (97.1%) while adding a box head, but breed accuracy says little about what this project adds.
+- **Localization:** this is where the trained model contributes. Mean box IoU rises from 0.54 for a fixed box to 0.85, and 83% of test images get the right breed with a box at IoU ≥ 0.75.
+- **Stability:** the three seeds differ by less than one point on every metric. Per-seed numbers are in `runs/summary/largest.json`.
+
+![Random test predictions](assets/test_random.png)
+
+The hardest test images (lowest IoU or wrong breed), the confusion matrix, and training curves are in [`assets/`](assets/).
 
 ## Data audit
 
@@ -87,7 +92,7 @@ python -m dogloc.train --name my_run seed=42 train.epochs=20   # any config key 
 python -m dogloc.visualize runs/my_run --out assets
 ```
 
-On a 4 GB laptop GPU (RTX 2050), one epoch takes about 2.3 minutes at 512 px with batch size 8.
+On a 4 GB laptop GPU (RTX 2050), one epoch takes about 2–4 minutes at 512 px with batch size 8, so the full three-seed run takes about 3–4 hours.
 
 ## Project structure
 
