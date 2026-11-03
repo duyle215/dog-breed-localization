@@ -1,0 +1,36 @@
+seed: 42
+output_dir: runs
+
+data:
+  root: data
+  img_size: 512
+  # largest: train on the largest dog, score against any annotated dog (ImageNet protocol)
+  # union:   train and score on the box enclosing all dogs (behaviour of the original notebook)
+  target: largest
+  split: [0.8, 0.1, 0.1]
+  split_seed: 42
+  split_file: splits/split_seed42.csv
+  # Out of 256 difference-hash bits. Pairs up to ~30 were all visually confirmed duplicates;
+  # cross-breed false matches start appearing around 40.
+  dedup_max_hamming: 32
+
+model:
+  bifpn_channels: 64
+  bifpn_repeats: 3
+
+train:
+  epochs: 20
+  # 16 at 512 px needs ~3.9 GB and spills out of a 4 GB GPU, which is ~3x slower.
+  batch_size: 8
+  num_workers: 4
+  amp: true
+  lr_backbone: 1.0e-4        # peak learning rates for OneCycle
+  lr_head: 1.0e-3
+  lr_box: 2.0e-3
+  weight_decay: 1.0e-2
+  warmup_pct: 0.1
+  grad_clip: 5.0
+  ema_decay: 0.998
+  label_smoothing: 0.1
+  lambda_box: 5.0
+  lambda_l1: 1.0
